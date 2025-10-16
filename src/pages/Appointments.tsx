@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Calendar, Clock, MapPin, Plus, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import BottomNav from "@/components/BottomNav";
 
 const Appointments = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
   const appointments = [
@@ -87,7 +89,11 @@ const Appointments = () => {
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
         {/* New Appointment Button */}
-        <Button className="w-full" size="lg">
+        <Button 
+          className="w-full" 
+          size="lg"
+          onClick={() => navigate("/book-appointment")}
+        >
           <Plus className="h-5 w-5 mr-2" />
           Agendar Nova Consulta
         </Button>
@@ -95,7 +101,11 @@ const Appointments = () => {
         {/* Appointments List */}
         <div className="space-y-4 animate-fade-in">
           {appointments.map((appointment) => (
-            <Card key={appointment.id} className="hover:shadow-lg transition-all">
+            <Card 
+              key={appointment.id} 
+              className="hover:shadow-lg transition-all cursor-pointer"
+              onClick={() => navigate(`/appointment/${appointment.id}`)}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div>

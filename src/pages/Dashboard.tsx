@@ -2,9 +2,12 @@ import { Calendar, FileText, Activity, Bell } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  
   const stats = [
     { title: "Próxima Consulta", value: "15 Out", icon: Calendar, color: "text-primary" },
     { title: "Exames Pendentes", value: "2", icon: FileText, color: "text-warning" },
@@ -79,7 +82,11 @@ const Dashboard = () => {
                 </div>
               </div>
             ))}
-            <Button variant="outline" className="w-full mt-2">
+            <Button 
+              variant="outline" 
+              className="w-full mt-2"
+              onClick={() => navigate("/appointments")}
+            >
               Ver todas as consultas
             </Button>
           </CardContent>
@@ -113,11 +120,19 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-          <Button variant="outline" className="h-auto py-4 flex-col gap-2">
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 flex-col gap-2"
+            onClick={() => navigate("/book-appointment")}
+          >
             <Calendar className="h-6 w-6" />
             <span className="text-sm">Agendar Consulta</span>
           </Button>
-          <Button variant="outline" className="h-auto py-4 flex-col gap-2">
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 flex-col gap-2"
+            onClick={() => navigate("/records")}
+          >
             <FileText className="h-6 w-6" />
             <span className="text-sm">Adicionar Exame</span>
           </Button>
