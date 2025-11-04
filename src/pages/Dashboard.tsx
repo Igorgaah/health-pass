@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
+import Notification from "@/components/Notification";
+import { useAuth } from "@/hooks/useAuth";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const stats = [
     { title: "Próxima Consulta", value: "15 Out", icon: Calendar, color: "text-primary" },
@@ -30,8 +33,13 @@ const Dashboard = () => {
       {/* Header */}
       <header className="bg-gradient-to-r from-primary to-secondary p-6 text-primary-foreground">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-1">Olá, Usuário!</h1>
-          <p className="text-primary-foreground/80">Bem-vindo ao seu painel de saúde</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold mb-1">Olá, {user?.name || 'Usuário'}! 👋</h1>
+              <p className="text-primary-foreground/80">Bem-vindo ao seu painel de saúde</p>
+            </div>
+            <Notification />
+          </div>
         </div>
       </header>
 

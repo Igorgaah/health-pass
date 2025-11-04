@@ -4,22 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const Profile = () => {
-  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const userInfo = {
-    name: "João da Silva",
-    email: "joao.silva@email.com",
+    name: user?.name || "João da Silva",
+    email: user?.email || "joao.silva@email.com",
     phone: "(11) 98765-4321",
     birthDate: "15/03/1990",
-    plan: "Premium",
+    plan: user?.healthPlan || "Premium",
   };
 
   const handleLogout = () => {
-    navigate("/auth");
+    logout();
+    toast.success("Logout realizado com sucesso!");
   };
 
   return (
