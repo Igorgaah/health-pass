@@ -1,28 +1,75 @@
 import { useState } from "react";
-import { FileText, Upload, Download, Search, Filter } from "lucide-react";
+import { FileText, Upload, Download, Search, Filter, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BottomNav from "@/components/BottomNav";
+import DocumentUploadDialog from "@/components/DocumentUploadDialog";
+import DocumentViewerDialog from "@/components/DocumentViewerDialog";
+import { useToast } from "@/hooks/use-toast";
 
 const Records = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [viewerDialogOpen, setViewerDialogOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const { toast } = useToast();
 
-  const records = {
+  const [records, setRecords] = useState({
     exams: [
-      { id: 1, name: "Hemograma Completo", date: "10 Set 2024", doctor: "Dr. João Silva", type: "Exame de Sangue" },
-      { id: 2, name: "Raio-X Tórax", date: "05 Set 2024", doctor: "Dra. Ana Costa", type: "Imagem" },
+      { id: 1, name: "Hemograma Completo", date: "10 Set 2024", doctor: "Dr. João Silva", type: "Exame de Sangue", fileUrl: "/documents/exam1.pdf" },
+      { id: 2, name: "Raio-X Tórax", date: "05 Set 2024", doctor: "Dra. Ana Costa", type: "Imagem", fileUrl: "/documents/exam2.pdf" },
     ],
     prescriptions: [
-      { id: 1, name: "Losartana 50mg", date: "15 Set 2024", doctor: "Dr. João Silva", validity: "90 dias" },
-      { id: 2, name: "Atorvastatina 20mg", date: "10 Set 2024", doctor: "Dr. João Silva", validity: "180 dias" },
+      { id: 1, name: "Losartana 50mg", date: "15 Set 2024", doctor: "Dr. João Silva", validity: "90 dias", fileUrl: "/documents/prescription1.pdf" },
+      { id: 2, name: "Atorvastatina 20mg", date: "10 Set 2024", doctor: "Dr. João Silva", validity: "180 dias", fileUrl: "/documents/prescription2.pdf" },
     ],
     vaccines: [
-      { id: 1, name: "COVID-19 (Reforço)", date: "01 Jun 2024", location: "UBS Centro", next: "-" },
-      { id: 2, name: "Influenza", date: "15 Mai 2024", location: "UBS Centro", next: "Mai 2025" },
+      { id: 1, name: "COVID-19 (Reforço)", date: "01 Jun 2024", location: "UBS Centro", next: "-", fileUrl: "/documents/vaccine1.pdf" },
+      { id: 2, name: "Influenza", date: "15 Mai 2024", location: "UBS Centro", next: "Mai 2025", fileUrl: "/documents/vaccine2.pdf" },
     ],
+  });
+
+  const handleUpload = (file: File, type: string, name: string) => {
+    const newDocument = {
+      id: Date.now(),
+      name,
+      date: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
+      doctor: "Dr. João Silva",
+      type: type === "exam" ? "Exame" : type === "prescription" ? "Receita" : "Vacina",
+      fileUrl: URL.createObjectURL(file),
+    };
+
+    if (type === "exam") {
+      setRecords(prev => ({
+        ...prev,
+        exams: [newDocument, ...prev.exams],
+      }));
+    } else if (type === "prescription") {
+      setRecords(prev => ({
+        ...prev,
+        prescriptions: [{ ...newDocument, validity: "90 dias" }, ...prev.prescriptions],
+      }));
+    } else if (type === "vaccine") {
+      setRecords(prev => ({
+        ...prev,
+        vaccines: [{ ...newDocument, location: "Upload do Usuário", next: "-" }, ...prev.vaccines],
+      }));
+    }
+  };
+
+  const handleView = (document: any) => {
+    setSelectedDocument(document);
+    setViewerDialogOpen(true);
+  };
+
+  const handleDownload = (document: any) => {
+    toast({
+      title: "Download iniciado",
+      description: `Baixando ${document.name}...`,
+    });
   };
 
   return (
@@ -44,7 +91,12 @@ const Records = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm" className="flex-1">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="flex-1"
+              onClick={() => setUploadDialogOpen(true)}
+            >
               <Upload className="h-4 w-4 mr-2" />
               Upload
             </Button>
@@ -85,9 +137,22 @@ const Records = () => {
                       <p className="text-sm text-muted-foreground">{exam.date}</p>
                       <Badge variant="outline">{exam.type}</Badge>
                     </div>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleView(exam)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDownload(exam)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -118,9 +183,22 @@ const Records = () => {
                         Válida por {prescription.validity}
                       </Badge>
                     </div>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleView(prescription)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDownload(prescription)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -153,9 +231,22 @@ const Records = () => {
                         </Badge>
                       )}
                     </div>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleView(vaccine)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDownload(vaccine)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -163,6 +254,18 @@ const Records = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <DocumentUploadDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        onUpload={handleUpload}
+      />
+
+      <DocumentViewerDialog
+        open={viewerDialogOpen}
+        onOpenChange={setViewerDialogOpen}
+        document={selectedDocument}
+      />
 
       <BottomNav />
     </div>
