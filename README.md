@@ -189,7 +189,9 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 ## 👨‍💻 Desenvolvido por
 
 Igor Rafael
+
 Igor Felipe
+
 Guilherme Silva
 
 ## 📧 Contato
