@@ -215,6 +215,14 @@ const Dashboard = () => {
             <FileText className="h-6 w-6" />
             <span className="text-sm">Adicionar Exame</span>
           </Button>
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 flex-col gap-2"
+            onClick={() => navigate("/health-metrics")}
+          >
+            <Activity className="h-6 w-6" />
+            <span className="text-sm">Sinais Vitais</span>
+          </Button>
         </div>
       </div>
 
