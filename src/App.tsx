@@ -13,6 +13,7 @@ import Appointments from "./pages/Appointments";
 import BookAppointment from "./pages/BookAppointment";
 import AppointmentDetail from "./pages/AppointmentDetail";
 import Records from "./pages/Records";
+import Reminders from "./pages/Reminders";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/book-appointment" element={<ProtectedRoute><BookAppointment /></ProtectedRoute>} />
             <Route path="/appointment/:id" element={<ProtectedRoute><AppointmentDetail /></ProtectedRoute>} />
             <Route path="/records" element={<ProtectedRoute><Records /></ProtectedRoute>} />
+            <Route path="/reminders" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

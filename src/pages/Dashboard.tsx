@@ -1,4 +1,4 @@
-import { Calendar, FileText, Activity, Bell } from "lucide-react";
+import { Calendar, FileText, Activity, Bell, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,10 +6,44 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import Notification from "@/components/Notification";
 import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
+import { format, isBefore, addHours, isPast } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface Reminder {
+  id: string;
+  title: string;
+  description: string;
+  type: "medication" | "appointment" | "exam";
+  dateTime: Date;
+  repeat: "none" | "daily" | "weekly" | "monthly";
+  enabled: boolean;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>([]);
+
+  useEffect(() => {
+    // Load reminders from localStorage
+    const stored = localStorage.getItem("healthpass_reminders");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      const reminders = parsed.map((r: any) => ({ ...r, dateTime: new Date(r.dateTime) }));
+      
+      // Filter upcoming reminders (next 24 hours)
+      const now = new Date();
+      const tomorrow = addHours(now, 24);
+      const upcoming = reminders.filter((r: Reminder) => 
+        r.enabled && 
+        !isPast(r.dateTime) &&
+        isBefore(r.dateTime, tomorrow)
+      ).slice(0, 3); // Show max 3 reminders
+      
+      setUpcomingReminders(upcoming);
+    }
+  }, []);
   
   const stats = [
     { title: "Próxima Consulta", value: "15 Out", icon: Calendar, color: "text-primary" },
@@ -100,8 +134,45 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Upcoming Reminders */}
+        {upcomingReminders.length > 0 && (
+          <Card className="animate-slide-up" style={{ animationDelay: "0.1s" }}>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Próximos Lembretes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {upcomingReminders.map((reminder) => (
+                <div
+                  key={reminder.id}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
+                >
+                  <Badge variant="outline" className="mt-1">
+                    {reminder.type === "medication" ? "💊" : reminder.type === "appointment" ? "📅" : "📋"}
+                  </Badge>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{reminder.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(reminder.dateTime, "dd/MM 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              <Button 
+                variant="outline" 
+                className="w-full mt-2"
+                onClick={() => navigate("/reminders")}
+              >
+                Ver todos os lembretes
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Alerts */}
-        <Card className="animate-slide-up" style={{ animationDelay: "0.1s" }}>
+        <Card className="animate-slide-up" style={{ animationDelay: "0.15s" }}>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Bell className="h-5 w-5 text-warning" />

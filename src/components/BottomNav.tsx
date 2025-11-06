@@ -1,4 +1,4 @@
-import { Home, Calendar, FileText, User } from "lucide-react";
+import { Home, Calendar, FileText, Bell, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const BottomNav = () => {
     { icon: Home, label: "Início", path: "/dashboard" },
     { icon: Calendar, label: "Consultas", path: "/appointments" },
     { icon: FileText, label: "Histórico", path: "/records" },
+    { icon: Bell, label: "Lembretes", path: "/reminders" },
     { icon: User, label: "Perfil", path: "/profile" },
   ];
 
