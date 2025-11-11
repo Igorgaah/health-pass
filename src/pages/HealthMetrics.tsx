@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Activity, Heart, Droplet, Weight, Target, AlertCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ArrowLeft, Plus, Activity, Heart, Droplet, Weight, Target, AlertCircle, Download, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 
 interface BloodPressureRecord {
   id: string;
@@ -53,6 +56,10 @@ interface GlucoseGoal {
 const HealthMetrics = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const bpChartRef = useRef<HTMLDivElement>(null);
+  const weightChartRef = useRef<HTMLDivElement>(null);
+  const glucoseChartRef = useRef<HTMLDivElement>(null);
   
   const [bloodPressure, setBloodPressure] = useState<BloodPressureRecord[]>([]);
   const [weight, setWeight] = useState<WeightRecord[]>([]);
@@ -240,6 +247,229 @@ const HealthMetrics = () => {
     }));
   };
 
+  const calculateStats = (data: number[]) => {
+    if (data.length === 0) return { avg: 0, min: 0, max: 0 };
+    const avg = data.reduce((a, b) => a + b, 0) / data.length;
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    return { avg: avg.toFixed(1), min, max };
+  };
+
+  const exportToCSV = (type: 'bp' | 'weight' | 'glucose') => {
+    let csvContent = "";
+    let filename = "";
+
+    if (type === 'bp' && bloodPressure.length > 0) {
+      csvContent = "Data,Sistólica (mmHg),Diastólica (mmHg)\n";
+      bloodPressure.forEach(record => {
+        csvContent += `${format(new Date(record.date), "dd/MM/yyyy", { locale: ptBR })},${record.systolic},${record.diastolic}\n`;
+      });
+      filename = "pressao_arterial.csv";
+    } else if (type === 'weight' && weight.length > 0) {
+      csvContent = "Data,Peso (kg)\n";
+      weight.forEach(record => {
+        csvContent += `${format(new Date(record.date), "dd/MM/yyyy", { locale: ptBR })},${record.weight}\n`;
+      });
+      filename = "peso.csv";
+    } else if (type === 'glucose' && glucose.length > 0) {
+      csvContent = "Data,Glicemia (mg/dL)\n";
+      glucose.forEach(record => {
+        csvContent += `${format(new Date(record.date), "dd/MM/yyyy", { locale: ptBR })},${record.glucose}\n`;
+      });
+      filename = "glicemia.csv";
+    }
+
+    if (csvContent) {
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({ title: "CSV exportado com sucesso!" });
+    } else {
+      toast({ title: "Nenhum dado para exportar", variant: "destructive" });
+    }
+  };
+
+  const exportToPDF = async (type: 'bp' | 'weight' | 'glucose') => {
+    const pdf = new jsPDF();
+    let yPosition = 20;
+
+    // Título
+    pdf.setFontSize(18);
+    pdf.text("Health Pass - Relatório de Sinais Vitais", 105, yPosition, { align: "center" });
+    yPosition += 10;
+
+    pdf.setFontSize(10);
+    pdf.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, 105, yPosition, { align: "center" });
+    yPosition += 15;
+
+    if (type === 'bp' && bloodPressure.length > 0) {
+      pdf.setFontSize(14);
+      pdf.text("Pressão Arterial", 14, yPosition);
+      yPosition += 10;
+
+      // Estatísticas
+      const systolicData = bloodPressure.map(r => r.systolic);
+      const diastolicData = bloodPressure.map(r => r.diastolic);
+      const systolicStats = calculateStats(systolicData);
+      const diastolicStats = calculateStats(diastolicData);
+
+      pdf.setFontSize(10);
+      pdf.text(`Sistólica - Média: ${systolicStats.avg} | Mín: ${systolicStats.min} | Máx: ${systolicStats.max} mmHg`, 14, yPosition);
+      yPosition += 6;
+      pdf.text(`Diastólica - Média: ${diastolicStats.avg} | Mín: ${diastolicStats.min} | Máx: ${diastolicStats.max} mmHg`, 14, yPosition);
+      yPosition += 10;
+
+      if (bpGoal) {
+        pdf.text(`Meta: Sistólica ${bpGoal.systolicMin}-${bpGoal.systolicMax} | Diastólica ${bpGoal.diastolicMin}-${bpGoal.diastolicMax} mmHg`, 14, yPosition);
+        yPosition += 10;
+      }
+
+      // Tabela
+      const tableData = bloodPressure.map(record => [
+        format(new Date(record.date), "dd/MM/yyyy", { locale: ptBR }),
+        record.systolic.toString(),
+        record.diastolic.toString()
+      ]);
+
+      autoTable(pdf, {
+        head: [['Data', 'Sistólica (mmHg)', 'Diastólica (mmHg)']],
+        body: tableData,
+        startY: yPosition,
+        theme: 'grid'
+      });
+
+      yPosition = (pdf as any).lastAutoTable.finalY + 10;
+
+      // Gráfico
+      if (bpChartRef.current) {
+        const canvas = await html2canvas(bpChartRef.current, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 180;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        if (yPosition + imgHeight > 280) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        pdf.addImage(imgData, 'PNG', 15, yPosition, imgWidth, imgHeight);
+      }
+
+      pdf.save("pressao_arterial_relatorio.pdf");
+
+    } else if (type === 'weight' && weight.length > 0) {
+      pdf.setFontSize(14);
+      pdf.text("Peso Corporal", 14, yPosition);
+      yPosition += 10;
+
+      // Estatísticas
+      const weightData = weight.map(r => r.weight);
+      const stats = calculateStats(weightData);
+
+      pdf.setFontSize(10);
+      pdf.text(`Média: ${stats.avg} kg | Mínimo: ${stats.min} kg | Máximo: ${stats.max} kg`, 14, yPosition);
+      yPosition += 10;
+
+      if (weightGoal) {
+        pdf.text(`Meta: ${weightGoal.min}-${weightGoal.max} kg`, 14, yPosition);
+        yPosition += 10;
+      }
+
+      // Tabela
+      const tableData = weight.map(record => [
+        format(new Date(record.date), "dd/MM/yyyy", { locale: ptBR }),
+        record.weight.toString()
+      ]);
+
+      autoTable(pdf, {
+        head: [['Data', 'Peso (kg)']],
+        body: tableData,
+        startY: yPosition,
+        theme: 'grid'
+      });
+
+      yPosition = (pdf as any).lastAutoTable.finalY + 10;
+
+      // Gráfico
+      if (weightChartRef.current) {
+        const canvas = await html2canvas(weightChartRef.current, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 180;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        if (yPosition + imgHeight > 280) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        pdf.addImage(imgData, 'PNG', 15, yPosition, imgWidth, imgHeight);
+      }
+
+      pdf.save("peso_relatorio.pdf");
+
+    } else if (type === 'glucose' && glucose.length > 0) {
+      pdf.setFontSize(14);
+      pdf.text("Glicemia", 14, yPosition);
+      yPosition += 10;
+
+      // Estatísticas
+      const glucoseData = glucose.map(r => r.glucose);
+      const stats = calculateStats(glucoseData);
+
+      pdf.setFontSize(10);
+      pdf.text(`Média: ${stats.avg} mg/dL | Mínimo: ${stats.min} mg/dL | Máximo: ${stats.max} mg/dL`, 14, yPosition);
+      yPosition += 10;
+
+      if (glucoseGoal) {
+        pdf.text(`Meta: ${glucoseGoal.min}-${glucoseGoal.max} mg/dL`, 14, yPosition);
+        yPosition += 10;
+      }
+
+      // Tabela
+      const tableData = glucose.map(record => [
+        format(new Date(record.date), "dd/MM/yyyy", { locale: ptBR }),
+        record.glucose.toString()
+      ]);
+
+      autoTable(pdf, {
+        head: [['Data', 'Glicemia (mg/dL)']],
+        body: tableData,
+        startY: yPosition,
+        theme: 'grid'
+      });
+
+      yPosition = (pdf as any).lastAutoTable.finalY + 10;
+
+      // Gráfico
+      if (glucoseChartRef.current) {
+        const canvas = await html2canvas(glucoseChartRef.current, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 180;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        if (yPosition + imgHeight > 280) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        pdf.addImage(imgData, 'PNG', 15, yPosition, imgWidth, imgHeight);
+      }
+
+      pdf.save("glicemia_relatorio.pdf");
+    } else {
+      toast({ title: "Nenhum dado para exportar", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "PDF exportado com sucesso!" });
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-gradient-to-r from-primary to-secondary p-4 text-primary-foreground sticky top-0 z-10">
@@ -278,12 +508,24 @@ const HealthMetrics = () => {
 
           <TabsContent value="blood-pressure" className="space-y-4">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Heart className="h-5 w-5 text-destructive" />
                   Pressão Arterial
                 </CardTitle>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  {bloodPressure.length > 0 && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => exportToCSV('bp')}>
+                        <FileText className="h-4 w-4 mr-1" />
+                        CSV
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => exportToPDF('bp')}>
+                        <Download className="h-4 w-4 mr-1" />
+                        PDF
+                      </Button>
+                    </>
+                  )}
                   <Dialog open={bpGoalDialogOpen} onOpenChange={setBpGoalDialogOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" variant="outline">
@@ -409,7 +651,8 @@ const HealthMetrics = () => {
                   </div>
                 )}
                 {bloodPressure.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <div ref={bpChartRef}>
+                    <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={formatChartData(bloodPressure, "bp")}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="dateFormatted" />
@@ -428,6 +671,7 @@ const HealthMetrics = () => {
                       <Line type="monotone" dataKey="diastolic" stroke="hsl(var(--primary))" name="Diastólica" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
+                  </div>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -441,12 +685,24 @@ const HealthMetrics = () => {
 
           <TabsContent value="weight" className="space-y-4">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Weight className="h-5 w-5 text-primary" />
                   Peso Corporal
                 </CardTitle>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  {weight.length > 0 && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => exportToCSV('weight')}>
+                        <FileText className="h-4 w-4 mr-1" />
+                        CSV
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => exportToPDF('weight')}>
+                        <Download className="h-4 w-4 mr-1" />
+                        PDF
+                      </Button>
+                    </>
+                  )}
                   <Dialog open={weightGoalDialogOpen} onOpenChange={setWeightGoalDialogOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" variant="outline">
@@ -537,7 +793,8 @@ const HealthMetrics = () => {
                   </div>
                 )}
                 {weight.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <div ref={weightChartRef}>
+                    <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={formatChartData(weight, "weight")}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="dateFormatted" />
@@ -553,6 +810,7 @@ const HealthMetrics = () => {
                       <Line type="monotone" dataKey="weight" stroke="hsl(var(--primary))" name="Peso (kg)" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
+                  </div>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -566,12 +824,24 @@ const HealthMetrics = () => {
 
           <TabsContent value="glucose" className="space-y-4">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Droplet className="h-5 w-5 text-info" />
                   Glicemia
                 </CardTitle>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  {glucose.length > 0 && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => exportToCSV('glucose')}>
+                        <FileText className="h-4 w-4 mr-1" />
+                        CSV
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => exportToPDF('glucose')}>
+                        <Download className="h-4 w-4 mr-1" />
+                        PDF
+                      </Button>
+                    </>
+                  )}
                   <Dialog open={glucoseGoalDialogOpen} onOpenChange={setGlucoseGoalDialogOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" variant="outline">
@@ -660,7 +930,8 @@ const HealthMetrics = () => {
                   </div>
                 )}
                 {glucose.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <div ref={glucoseChartRef}>
+                    <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={formatChartData(glucose, "glucose")}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="dateFormatted" />
@@ -676,6 +947,7 @@ const HealthMetrics = () => {
                       <Line type="monotone" dataKey="glucose" stroke="hsl(var(--info))" name="Glicemia (mg/dL)" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
+                  </div>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
