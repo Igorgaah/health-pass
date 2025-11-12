@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Bell, Plus, Trash2, Edit, Pill, Calendar, FileText } from "lucide-react";
+import { Bell, Plus, Trash2, Edit, Pill, Calendar, FileText, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ export interface Reminder {
 }
 
 const Reminders = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -190,11 +192,20 @@ const Reminders = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 pb-20">
       <div className="container max-w-2xl mx-auto p-4 space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Lembretes</h1>
-            <p className="text-muted-foreground">
-              Configure alarmes para não perder nada
-            </p>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">Lembretes</h1>
+              <p className="text-muted-foreground">
+                Configure alarmes para não perder nada
+              </p>
+            </div>
           </div>
           <Button onClick={() => setDialogOpen(true)} size="lg">
             <Plus className="mr-2 h-5 w-5" />
