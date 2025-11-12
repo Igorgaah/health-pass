@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Plus, Activity, Heart, Droplet, Weight, Target, AlertCircle, Download, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Activity, Heart, Droplet, Weight, Target, AlertCircle, Download, FileText, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +53,17 @@ interface GlucoseGoal {
   max: number;
 }
 
+interface AIInsights {
+  summary: string;
+  trends: {
+    bloodPressure: string;
+    weight: string;
+    glucose: string;
+  };
+  recommendations: string[];
+  alerts: string[];
+}
+
 const HealthMetrics = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -76,6 +87,9 @@ const HealthMetrics = () => {
   const [bpGoal, setBpGoal] = useState<BloodPressureGoal | null>(null);
   const [weightGoal, setWeightGoal] = useState<WeightGoal | null>(null);
   const [glucoseGoal, setGlucoseGoal] = useState<GlucoseGoal | null>(null);
+  
+  const [aiInsights, setAiInsights] = useState<AIInsights | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
     const storedBp = localStorage.getItem("healthpass_blood_pressure");
@@ -470,6 +484,65 @@ const HealthMetrics = () => {
     toast({ title: "PDF exportado com sucesso!" });
   };
 
+  const analyzeWithAI = async () => {
+    if (bloodPressure.length === 0 && weight.length === 0 && glucose.length === 0) {
+      toast({ 
+        title: "Nenhum dado disponível", 
+        description: "Adicione registros de sinais vitais para análise.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-health`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bloodPressureData: bloodPressure.map(bp => ({
+            date: bp.date,
+            systolic: bp.systolic,
+            diastolic: bp.diastolic
+          })),
+          weightData: weight.map(w => ({
+            date: w.date,
+            value: w.weight
+          })),
+          glucoseData: glucose.map(g => ({
+            date: g.date,
+            value: g.glucose
+          })),
+          goals: {
+            bloodPressure: bpGoal || { systolic: 120, diastolic: 80 },
+            weight: weightGoal?.max || 70,
+            glucose: glucoseGoal?.max || 100
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao analisar dados');
+      }
+
+      const data = await response.json();
+      setAiInsights(data.insights);
+      toast({ title: "✨ Análise concluída com sucesso!" });
+    } catch (error) {
+      console.error('Error analyzing health data:', error);
+      toast({ 
+        title: "Erro na análise", 
+        description: error instanceof Error ? error.message : "Tente novamente mais tarde",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-gradient-to-r from-primary to-secondary p-4 text-primary-foreground sticky top-0 z-10">
@@ -490,6 +563,99 @@ const HealthMetrics = () => {
       </header>
 
       <div className="max-w-4xl mx-auto p-4">
+        {/* AI Insights Card */}
+        <Card className="mb-4 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Análise com IA
+              </CardTitle>
+              <Button 
+                onClick={analyzeWithAI}
+                disabled={isAnalyzing}
+                size="sm"
+                className="gap-2"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Activity className="h-4 w-4 animate-spin" />
+                    Analisando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Analisar Dados
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          {aiInsights && (
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-sm mb-2">📊 Resumo Geral</h3>
+                <p className="text-sm text-muted-foreground">{aiInsights.summary}</p>
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-1">
+                    <Heart className="h-4 w-4 text-destructive" />
+                    Pressão Arterial
+                  </h3>
+                  <p className="text-xs text-muted-foreground">{aiInsights.trends.bloodPressure}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-1">
+                    <Weight className="h-4 w-4 text-primary" />
+                    Peso
+                  </h3>
+                  <p className="text-xs text-muted-foreground">{aiInsights.trends.weight}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-1">
+                    <Droplet className="h-4 w-4 text-blue-500" />
+                    Glicemia
+                  </h3>
+                  <p className="text-xs text-muted-foreground">{aiInsights.trends.glucose}</p>
+                </div>
+              </div>
+
+              {aiInsights.recommendations.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-sm mb-2">💡 Recomendações</h3>
+                  <ul className="space-y-1">
+                    {aiInsights.recommendations.map((rec, idx) => (
+                      <li key={idx} className="text-xs text-muted-foreground flex gap-2">
+                        <span className="text-primary">•</span>
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {aiInsights.alerts.length > 0 && (
+                <div className="bg-destructive/10 p-3 rounded-lg">
+                  <h3 className="font-semibold text-sm mb-2 flex items-center gap-2 text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    Alertas Importantes
+                  </h3>
+                  <ul className="space-y-1">
+                    {aiInsights.alerts.map((alert, idx) => (
+                      <li key={idx} className="text-xs text-destructive/90 flex gap-2">
+                        <span>⚠️</span>
+                        {alert}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+
         <Tabs defaultValue="blood-pressure" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="blood-pressure">
