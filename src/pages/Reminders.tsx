@@ -8,6 +8,11 @@ import { useToast } from "@/hooks/use-toast";
 import { ReminderDialog } from "@/components/ReminderDialog";
 import { format, isPast, isBefore, addMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { 
+  requestNotificationPermission as requestPushPermission, 
+  scheduleNotification, 
+  sendNotification as sendPushNotification 
+} from "@/utils/registerSW";
 
 export interface Reminder {
   id: string;
@@ -45,7 +50,19 @@ const Reminders = () => {
     // Save reminders to localStorage
     localStorage.setItem("healthpass_reminders", JSON.stringify(reminders));
 
-    // Check for upcoming reminders
+    // Agendar notificações via Service Worker
+    reminders.forEach((reminder) => {
+      if (reminder.enabled && !isPast(reminder.dateTime)) {
+        scheduleNotification({
+          id: reminder.id,
+          title: reminder.title,
+          description: reminder.description,
+          dateTime: reminder.dateTime
+        });
+      }
+    });
+
+    // Check for upcoming reminders (backup)
     const checkReminders = () => {
       const now = new Date();
       reminders.forEach((reminder) => {
@@ -53,7 +70,7 @@ const Reminders = () => {
           const timeDiff = reminder.dateTime.getTime() - now.getTime();
           // Notify 5 minutes before
           if (timeDiff > 0 && timeDiff <= 5 * 60 * 1000) {
-            sendNotification(reminder);
+            handleSendNotification(reminder);
           }
         }
       });
@@ -66,38 +83,43 @@ const Reminders = () => {
   }, [reminders]);
 
   const requestNotificationPermission = async () => {
-    if ("Notification" in window && Notification.permission === "default") {
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-      
-      if (permission === "granted") {
-        toast({
-          title: "Notificações ativadas",
-          description: "Você receberá lembretes para seus medicamentos e consultas",
-        });
-      }
+    const permission = await requestPushPermission();
+    setNotificationPermission(permission);
+    
+    if (permission === "granted") {
+      toast({
+        title: "Notificações ativadas",
+        description: "Você receberá lembretes mesmo com o app fechado!",
+      });
+    } else if (permission === "denied") {
+      toast({
+        title: "Notificações bloqueadas",
+        description: "Ative as notificações nas configurações do navegador",
+        variant: "destructive"
+      });
     }
   };
 
-  const sendNotification = (reminder: Reminder) => {
-    if ("Notification" in window && Notification.permission === "granted") {
-      const typeIcons = {
-        medication: "💊",
-        appointment: "📅",
-        exam: "📋"
-      };
+  const handleSendNotification = async (reminder: Reminder) => {
+    const typeIcons = {
+      medication: "💊",
+      appointment: "📅",
+      exam: "📋"
+    };
 
-      new Notification(`${typeIcons[reminder.type]} ${reminder.title}`, {
+    await sendPushNotification(
+      `${typeIcons[reminder.type]} ${reminder.title}`,
+      {
         body: reminder.description,
-        icon: "/favicon.ico",
         tag: reminder.id,
-      });
+        data: { url: '/reminders' }
+      }
+    );
 
-      toast({
-        title: reminder.title,
-        description: reminder.description,
-      });
-    }
+    toast({
+      title: reminder.title,
+      description: reminder.description,
+    });
   };
 
   const handleAddReminder = (reminder: Omit<Reminder, "id">) => {
@@ -221,11 +243,16 @@ const Reminders = () => {
                 <div className="flex-1">
                   <h3 className="font-semibold mb-1">Ative as notificações</h3>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Receba alertas para não esquecer seus medicamentos e consultas
+                    Receba alertas para não esquecer seus medicamentos e consultas, mesmo com o app fechado!
                   </p>
-                  <Button onClick={requestNotificationPermission} variant="outline" size="sm">
-                    Ativar notificações
-                  </Button>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button onClick={requestNotificationPermission} variant="outline" size="sm">
+                      Ativar notificações
+                    </Button>
+                    <Button onClick={() => navigate("/install")} variant="ghost" size="sm">
+                      Instalar app
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
