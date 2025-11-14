@@ -17,6 +17,7 @@ import Reminders from "./pages/Reminders";
 import HealthMetrics from "./pages/HealthMetrics";
 import Profile from "./pages/Profile";
 import Install from "./pages/Install";
+import Gamification from "./pages/Gamification";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/reminders" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
             <Route path="/health-metrics" element={<ProtectedRoute><HealthMetrics /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/gamification" element={<ProtectedRoute><Gamification /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

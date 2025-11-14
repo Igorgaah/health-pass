@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Plus, Trash2, Edit, Pill, Calendar, FileText, ArrowLeft } from "lucide-react";
+import { Bell, Plus, Trash2, Edit, Pill, Calendar, FileText, ArrowLeft, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import {
   scheduleNotification, 
   sendNotification as sendPushNotification 
 } from "@/utils/registerSW";
+import { useGamification } from "@/hooks/useGamification";
 
 export interface Reminder {
   id: string;
@@ -27,10 +28,12 @@ export interface Reminder {
 const Reminders = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { addPoints } = useGamification();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | undefined>();
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+  const [completedReminders, setCompletedReminders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // Load reminders from localStorage
@@ -38,6 +41,12 @@ const Reminders = () => {
     if (stored) {
       const parsed = JSON.parse(stored);
       setReminders(parsed.map((r: any) => ({ ...r, dateTime: new Date(r.dateTime) })));
+    }
+
+    // Load completed reminders
+    const storedCompleted = localStorage.getItem("healthpass_completed_reminders");
+    if (storedCompleted) {
+      setCompletedReminders(new Set(JSON.parse(storedCompleted)));
     }
 
     // Check notification permission
@@ -168,6 +177,37 @@ const Reminders = () => {
     setEditingReminder(undefined);
   };
 
+  const completeReminder = async (reminder: Reminder) => {
+    if (completedReminders.has(reminder.id)) {
+      toast({
+        title: "Já concluído",
+        description: "Este lembrete já foi marcado como concluído.",
+      });
+      return;
+    }
+
+    const newCompleted = new Set(completedReminders);
+    newCompleted.add(reminder.id);
+    setCompletedReminders(newCompleted);
+    localStorage.setItem("healthpass_completed_reminders", JSON.stringify(Array.from(newCompleted)));
+
+    // Award points based on type
+    const pointsMap = {
+      medication: 10,
+      appointment: 20,
+      exam: 15,
+    };
+
+    const points = pointsMap[reminder.type];
+    const reasons = {
+      medication: "Medicamento tomado no horário",
+      appointment: "Consulta realizada",
+      exam: "Exame realizado",
+    };
+
+    await addPoints(points, reasons[reminder.type], "reminders");
+  };
+
   const getTypeIcon = (type: Reminder["type"]) => {
     switch (type) {
       case "medication":
@@ -281,6 +321,16 @@ const Reminders = () => {
                       </p>
                     </div>
                     <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => completeReminder(reminder)}
+                        disabled={completedReminders.has(reminder.id)}
+                        className={completedReminders.has(reminder.id) ? "bg-green-500/20 text-green-500" : ""}
+                        title="Marcar como concluído"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

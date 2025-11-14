@@ -6,9 +6,11 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import Notification from "@/components/Notification";
 import { useAuth } from "@/hooks/useAuth";
+import { useGamification } from "@/hooks/useGamification";
 import { useState, useEffect } from "react";
 import { format, isBefore, addHours, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Trophy, Star } from "lucide-react";
 
 interface Reminder {
   id: string;
@@ -23,6 +25,7 @@ interface Reminder {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { userPoints } = useGamification();
   const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>([]);
 
   useEffect(() => {
@@ -78,6 +81,33 @@ const Dashboard = () => {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Gamification Card */}
+        <Card 
+          className="bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate("/gamification")}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-full bg-primary/20">
+                  <Trophy className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Seu Progresso</p>
+                  <p className="text-2xl font-bold">Level {userPoints?.level || 1}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="flex items-center gap-1 text-primary">
+                  <Star className="h-5 w-5 fill-primary" />
+                  <span className="text-xl font-bold">{userPoints?.total_points || 0}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">pontos</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4 animate-fade-in">
           {stats.map((stat, index) => {
