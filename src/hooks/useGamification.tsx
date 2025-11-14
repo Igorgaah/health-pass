@@ -42,15 +42,17 @@ export const useGamification = () => {
 
   const loadGamificationData = async () => {
     try {
+      const supabaseAny = supabase as any;
+      
       // Load or create user points
-      const { data: existingPoints } = await supabase
+      const { data: existingPoints } = await supabaseAny
         .from('user_points')
         .select('*')
         .eq('user_id', user!.id)
         .single();
 
       if (!existingPoints) {
-        const { data: newPoints } = await supabase
+        const { data: newPoints } = await supabaseAny
           .from('user_points')
           .insert({ user_id: user!.id, total_points: 0, level: 1 })
           .select()
@@ -61,14 +63,14 @@ export const useGamification = () => {
       }
 
       // Load achievements
-      const { data: achievementsData } = await supabase
+      const { data: achievementsData } = await supabaseAny
         .from('achievements')
         .select('*')
         .order('points_required', { ascending: true });
       setAchievements(achievementsData || []);
 
       // Load user achievements
-      const { data: userAchievementsData } = await supabase
+      const { data: userAchievementsData } = await supabaseAny
         .from('user_achievements')
         .select('*, achievement:achievements(*)')
         .eq('user_id', user!.id);
@@ -85,8 +87,10 @@ export const useGamification = () => {
     if (!user || !userPoints) return;
 
     try {
+      const supabaseAny = supabase as any;
+      
       // Add transaction
-      await supabase
+      await supabaseAny
         .from('point_transactions')
         .insert({
           user_id: user.id,
@@ -99,7 +103,7 @@ export const useGamification = () => {
       const newTotalPoints = userPoints.total_points + points;
       const newLevel = Math.floor(newTotalPoints / 100) + 1;
 
-      const { data: updatedPoints } = await supabase
+      const { data: updatedPoints } = await supabaseAny
         .from('user_points')
         .update({
           total_points: newTotalPoints,
@@ -123,6 +127,8 @@ export const useGamification = () => {
   const checkAchievements = async (totalPoints: number) => {
     if (!user) return;
 
+    const supabaseAny = supabase as any;
+
     // Find achievements not yet unlocked
     const unlockedIds = userAchievements.map(ua => ua.achievement_id);
     const eligibleAchievements = achievements.filter(
@@ -131,7 +137,7 @@ export const useGamification = () => {
 
     for (const achievement of eligibleAchievements) {
       try {
-        await supabase
+        await supabaseAny
           .from('user_achievements')
           .insert({
             user_id: user.id,
@@ -148,7 +154,7 @@ export const useGamification = () => {
 
     // Reload user achievements
     if (eligibleAchievements.length > 0) {
-      const { data: userAchievementsData } = await supabase
+      const { data: userAchievementsData } = await supabaseAny
         .from('user_achievements')
         .select('*, achievement:achievements(*)')
         .eq('user_id', user.id);
