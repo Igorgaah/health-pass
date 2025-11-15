@@ -9,24 +9,51 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const Auth = () => {
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [activeTab, setActiveTab] = useState("login");
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    try {
-      await login(email, password);
+    const { error } = await login(email, password);
+    
+    if (error) {
+      toast.error(error.message || "Erro ao fazer login. Verifique suas credenciais.");
+    } else {
       toast.success("Login realizado com sucesso!");
-    } catch (error) {
-      toast.error("Erro ao fazer login. Tente novamente.");
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    if (!name.trim()) {
+      toast.error("Por favor, insira seu nome.");
+      setIsLoading(false);
+      return;
+    }
+    
+    const { error } = await signup(email, password, name);
+    
+    if (error) {
+      if (error.message.includes("already registered")) {
+        toast.error("Este email já está cadastrado. Faça login.");
+      } else {
+        toast.error(error.message || "Erro ao criar conta. Tente novamente.");
+      }
+    } else {
+      toast.success("Conta criada com sucesso!");
+    }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -48,14 +75,14 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
                 <TabsTrigger value="signup">Cadastrar</TabsTrigger>
               </TabsList>
               
               <TabsContent value="login">
-                <form onSubmit={handleAuth} className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
@@ -89,7 +116,7 @@ const Auth = () => {
               </TabsContent>
               
               <TabsContent value="signup">
-                <form onSubmit={handleAuth} className="space-y-4">
+                <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome completo</Label>
                     <Input
