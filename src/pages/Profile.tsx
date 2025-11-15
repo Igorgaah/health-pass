@@ -1,4 +1,4 @@
-import { User, Mail, Phone, Calendar, CreditCard, Settings, LogOut, Bell, Shield } from "lucide-react";
+import { User, Mail, Phone, Calendar, CreditCard, Settings, LogOut, Bell, Shield, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -6,10 +6,14 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { isAdmin } = useAdmin();
   const profile = user?.profile;
 
   const userInfo = {
@@ -119,6 +123,17 @@ const Profile = () => {
 
         {/* Actions */}
         <div className="space-y-3 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+          {isAdmin && (
+            <Button 
+              variant="outline" 
+              className="w-full justify-start bg-primary/5 border-primary/20 hover:bg-primary/10" 
+              size="lg"
+              onClick={() => navigate('/admin')}
+            >
+              <Lock className="h-5 w-5 mr-3 text-primary" />
+              Painel Administrativo
+            </Button>
+          )}
           <Button variant="outline" className="w-full justify-start" size="lg">
             <Settings className="h-5 w-5 mr-3" />
             Configurações
