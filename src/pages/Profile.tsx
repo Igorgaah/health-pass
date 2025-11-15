@@ -10,13 +10,14 @@ import { toast } from "sonner";
 
 const Profile = () => {
   const { user, logout } = useAuth();
+  const profile = user?.profile;
 
   const userInfo = {
-    name: user?.name || "João da Silva",
+    name: profile?.name || "João da Silva",
     email: user?.email || "joao.silva@email.com",
-    phone: "(11) 98765-4321",
-    birthDate: "15/03/1990",
-    plan: user?.healthPlan || "Premium",
+    phone: profile?.phone || "(11) 98765-4321",
+    birthDate: profile?.birth_date || "15/03/1990",
+    plan: profile?.health_plan || "Premium",
   };
 
   const handleLogout = () => {

@@ -49,7 +49,7 @@ export const useGamification = () => {
         .from('user_points')
         .select('*')
         .eq('user_id', user!.id)
-        .single();
+        .maybeSingle();
 
       if (!existingPoints) {
         const { data: newPoints } = await supabaseAny

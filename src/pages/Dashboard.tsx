@@ -72,7 +72,7 @@ const Dashboard = () => {
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-2xl font-bold mb-1">Olá, {user?.name || 'Usuário'}! 👋</h1>
+              <h1 className="text-2xl font-bold mb-1">Olá, {user?.profile?.name || 'Usuário'}! 👋</h1>
               <p className="text-primary-foreground/80">Bem-vindo ao seu painel de saúde</p>
             </div>
             <Notification />
