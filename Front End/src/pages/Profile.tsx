@@ -17,11 +17,11 @@ const Profile = () => {
   const profile = user?.profile;
 
   const userInfo = {
-    name: profile?.name || "João da Silva",
-    email: user?.email || "joao.silva@email.com",
-    phone: profile?.phone || "(11) 98765-4321",
-    birthDate: profile?.birth_date || "15/03/1990",
-    plan: profile?.health_plan || "Premium",
+    name: profile?.name || "Usuário",
+    email: user?.email || "",
+    phone: profile?.phone || "",
+    birthDate: profile?.birth_date || "",
+    plan: profile?.health_plan || "",
   };
 
   const handleLogout = () => {

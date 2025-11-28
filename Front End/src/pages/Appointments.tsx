@@ -11,35 +11,15 @@ const Appointments = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const appointments = [
-    {
-      id: 1,
-      doctor: "Dr. João Silva",
-      specialty: "Cardiologia",
-      date: "15 Out 2024",
-      time: "14:00",
-      location: "Hospital São Lucas",
-      status: "confirmed",
-    },
-    {
-      id: 2,
-      doctor: "Dra. Maria Santos",
-      specialty: "Dermatologia",
-      date: "22 Out 2024",
-      time: "10:30",
-      location: "Clínica Saúde Total",
-      status: "pending",
-    },
-    {
-      id: 3,
-      doctor: "Dr. Pedro Costa",
-      specialty: "Ortopedia",
-      date: "10 Out 2024",
-      time: "09:00",
-      location: "Hospital Central",
-      status: "completed",
-    },
-  ];
+  const [appointments] = useState<Array<{
+    id: number;
+    doctor: string;
+    specialty: string;
+    date: string;
+    time: string;
+    location: string;
+    status: string;
+  }>>([]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -100,7 +80,18 @@ const Appointments = () => {
 
         {/* Appointments List */}
         <div className="space-y-4 animate-fade-in">
-          {appointments.map((appointment) => (
+          {appointments.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6 text-center py-12">
+                <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="font-semibold mb-2">Nenhuma consulta agendada</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Agende sua primeira consulta clicando no botão acima
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            appointments.map((appointment) => (
             <Card 
               key={appointment.id} 
               className="hover:shadow-lg transition-all cursor-pointer"
@@ -143,7 +134,8 @@ const Appointments = () => {
                 )}
               </CardContent>
             </Card>
-          ))}
+            ))
+          )}
         </div>
       </div>
 

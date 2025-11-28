@@ -18,18 +18,9 @@ const Records = () => {
   const { toast } = useToast();
 
   const [records, setRecords] = useState({
-    exams: [
-      { id: 1, name: "Hemograma Completo", date: "10 Set 2024", doctor: "Dr. João Silva", type: "Exame de Sangue", fileUrl: "/documents/exam1.pdf" },
-      { id: 2, name: "Raio-X Tórax", date: "05 Set 2024", doctor: "Dra. Ana Costa", type: "Imagem", fileUrl: "/documents/exam2.pdf" },
-    ],
-    prescriptions: [
-      { id: 1, name: "Losartana 50mg", date: "15 Set 2024", doctor: "Dr. João Silva", validity: "90 dias", fileUrl: "/documents/prescription1.pdf" },
-      { id: 2, name: "Atorvastatina 20mg", date: "10 Set 2024", doctor: "Dr. João Silva", validity: "180 dias", fileUrl: "/documents/prescription2.pdf" },
-    ],
-    vaccines: [
-      { id: 1, name: "COVID-19 (Reforço)", date: "01 Jun 2024", location: "UBS Centro", next: "-", fileUrl: "/documents/vaccine1.pdf" },
-      { id: 2, name: "Influenza", date: "15 Mai 2024", location: "UBS Centro", next: "Mai 2025", fileUrl: "/documents/vaccine2.pdf" },
-    ],
+    exams: [] as Array<{ id: number; name: string; date: string; doctor: string; type: string; fileUrl: string }>,
+    prescriptions: [] as Array<{ id: number; name: string; date: string; doctor: string; validity: string; fileUrl: string }>,
+    vaccines: [] as Array<{ id: number; name: string; date: string; location: string; next: string; fileUrl: string }>,
   });
 
   const handleUpload = (file: File, type: string, name: string) => {
@@ -37,7 +28,7 @@ const Records = () => {
       id: Date.now(),
       name,
       date: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
-      doctor: "Dr. João Silva",
+      doctor: "",
       type: type === "exam" ? "Exame" : type === "prescription" ? "Receita" : "Vacina",
       fileUrl: URL.createObjectURL(file),
     };

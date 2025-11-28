@@ -20,27 +20,9 @@ const BookAppointment = () => {
   const [selectedTime, setSelectedTime] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const specialties = [
-    "Cardiologia",
-    "Dermatologia",
-    "Ortopedia",
-    "Pediatria",
-    "Oftalmologia",
-    "Neurologia",
-    "Ginecologia",
-    "Psiquiatria",
-  ];
+  const [specialties] = useState<string[]>([]);
 
-  const doctors = {
-    Cardiologia: [
-      { id: 1, name: "Dr. João Silva", location: "Hospital São Lucas", rating: 4.8 },
-      { id: 2, name: "Dra. Ana Costa", location: "Clínica CardioVida", rating: 4.9 },
-    ],
-    Dermatologia: [
-      { id: 3, name: "Dra. Maria Santos", location: "Clínica Saúde Total", rating: 4.7 },
-      { id: 4, name: "Dr. Pedro Lima", location: "DermaCare", rating: 4.6 },
-    ],
-  };
+  const [doctors] = useState<Record<string, Array<{ id: number; name: string; location: string; rating: number }>>>({});
 
   const availableTimes = [
     "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
@@ -127,30 +109,36 @@ const BookAppointment = () => {
                   <CardTitle>Escolha o Médico</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {(doctors[selectedSpecialty as keyof typeof doctors] || []).map((doctor) => (
-                    <button
-                      key={doctor.id}
-                      onClick={() => setSelectedDoctor(doctor.name)}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                        selectedDoctor === doctor.name
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">{doctor.name}</p>
-                          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{doctor.location}</span>
+                  {(doctors[selectedSpecialty] || []).length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Nenhum médico disponível para esta especialidade
+                    </div>
+                  ) : (
+                    (doctors[selectedSpecialty] || []).map((doctor) => (
+                      <button
+                        key={doctor.id}
+                        onClick={() => setSelectedDoctor(doctor.name)}
+                        className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                          selectedDoctor === doctor.name
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">{doctor.name}</p>
+                            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                              <MapPin className="h-4 w-4" />
+                              <span>{doctor.location}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium">⭐ {doctor.rating}</div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">⭐ {doctor.rating}</div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))
+                  )}
                 </CardContent>
               </Card>
             )}

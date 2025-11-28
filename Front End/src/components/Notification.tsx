@@ -21,35 +21,8 @@ interface NotificationItem {
   type: 'appointment' | 'medication' | 'exam' | 'general';
 }
 
-const mockNotifications: NotificationItem[] = [
-  {
-    id: '1',
-    title: 'Consulta Amanhã',
-    message: 'Lembrete: Consulta com Dr. Carlos Silva às 14:00',
-    time: '2h atrás',
-    read: false,
-    type: 'appointment'
-  },
-  {
-    id: '2',
-    title: 'Hora do Medicamento',
-    message: 'Tomar Losartana 50mg',
-    time: '5h atrás',
-    read: false,
-    type: 'medication'
-  },
-  {
-    id: '3',
-    title: 'Resultado de Exame',
-    message: 'Seus resultados de hemograma estão disponíveis',
-    time: '1 dia atrás',
-    read: true,
-    type: 'exam'
-  },
-];
-
 const Notification = () => {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const markAsRead = (id: string) => {

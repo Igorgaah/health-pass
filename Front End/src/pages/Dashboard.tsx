@@ -47,23 +47,17 @@ const Dashboard = () => {
       setUpcomingReminders(upcoming);
     }
   }, []);
-  
+
   const stats = [
-    { title: "Próxima Consulta", value: "15 Out", icon: Calendar, color: "text-primary" },
-    { title: "Exames Pendentes", value: "2", icon: FileText, color: "text-warning" },
-    { title: "Vacinas em Dia", value: "12", icon: Activity, color: "text-success" },
-    { title: "Lembretes", value: "3", icon: Bell, color: "text-info" },
+    { title: "Próxima Consulta", value: "-", icon: Calendar, color: "text-primary" },
+    { title: "Exames Pendentes", value: "0", icon: FileText, color: "text-warning" },
+    { title: "Vacinas em Dia", value: "0", icon: Activity, color: "text-success" },
+    { title: "Lembretes", value: upcomingReminders.length.toString(), icon: Bell, color: "text-info" },
   ];
 
-  const upcomingAppointments = [
-    { doctor: "Dr. João Silva", specialty: "Cardiologia", date: "15 Out", time: "14:00" },
-    { doctor: "Dra. Maria Santos", specialty: "Dermatologia", date: "22 Out", time: "10:30" },
-  ];
+  const [upcomingAppointments] = useState<Array<{ doctor: string; specialty: string; date: string; time: string }>>([]);
 
-  const alerts = [
-    { type: "exam", message: "Resultado do exame de sangue disponível", time: "2h atrás" },
-    { type: "medication", message: "Lembrete: Tomar medicação às 20h", time: "4h atrás" },
-  ];
+  const [alerts] = useState<Array<{ type: string; message: string; time: string }>>([]);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -139,21 +133,27 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {upcomingAppointments.map((appointment, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
-              >
-                <div>
-                  <p className="font-medium">{appointment.doctor}</p>
-                  <p className="text-sm text-muted-foreground">{appointment.specialty}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">{appointment.date}</p>
-                  <p className="text-xs text-muted-foreground">{appointment.time}</p>
-                </div>
+            {upcomingAppointments.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Nenhuma consulta agendada
               </div>
-            ))}
+            ) : (
+              upcomingAppointments.map((appointment, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
+                >
+                  <div>
+                    <p className="font-medium">{appointment.doctor}</p>
+                    <p className="text-sm text-muted-foreground">{appointment.specialty}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">{appointment.date}</p>
+                    <p className="text-xs text-muted-foreground">{appointment.time}</p>
+                  </div>
+                </div>
+              ))
+            )}
             <Button 
               variant="outline" 
               className="w-full mt-2"
@@ -210,20 +210,26 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {alerts.map((alert, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
-              >
-                <Badge variant="outline" className="mt-1">
-                  {alert.type === "exam" ? "Exame" : "Medicação"}
-                </Badge>
-                <div className="flex-1">
-                  <p className="text-sm">{alert.message}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{alert.time}</p>
-                </div>
+            {alerts.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Nenhum alerta recente
               </div>
-            ))}
+            ) : (
+              alerts.map((alert, index) => (
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 hover:bg-accent transition-colors"
+                >
+                  <Badge variant="outline" className="mt-1">
+                    {alert.type === "exam" ? "Exame" : "Medicação"}
+                  </Badge>
+                  <div className="flex-1">
+                    <p className="text-sm">{alert.message}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{alert.time}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
